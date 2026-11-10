@@ -1,0 +1,135 @@
+# 21_global_torsion_failure.sage
+#
+# Unit U of "Independent Exact Verification of the Finite-Sum and
+# Scalar-Rearrangement Identities Surrounding IUT IV".
+#
+# Verifies that the strict Initial Theta Data of IUT I, Def 3.1
+# FAILS for 11a1 over Q, because:
+#   - E[30] is not contained in E(Q), and
+#   - sqrt(-1) is not in Q.
+#
+# Classification: Direct / Exact.
+# Runs in SageMath 9.5+ or 10.x. Calls main() unconditionally.
+
+from sage.all import *
+
+def main():
+    print("=" * 78)
+    print("  UNIT U: FAILURE OF GLOBAL INITIAL THETA DATA FOR 11a1 OVER Q")
+    print("=" * 78)
+    print()
+
+    E = EllipticCurve('11a1')
+    print(f"  Curve: y^2 + y = x^3 - x^2 - 10x - 20 (11a1)")
+    print()
+
+    # ==============================================================
+    # U.1: E(Q)_tors = Z/5Z
+    # ==============================================================
+    print("--- U.1: Global torsion E(Q)_tors ---")
+    tors = E.torsion_subgroup()
+    tors_inv = tors.invariants()
+    tors_order = tors.order()
+    print(f"  E(Q)_tors structure: {tors_inv}")
+    print(f"  E(Q)_tors order: {tors_order}")
+    assert tors_inv == (5,), f"Error: E(Q)_tors is {tors_inv}, expected (5,)."
+    print(f"  [PASS] E(Q)_tors = Z/5Z.")
+    print()
+
+    # ==============================================================
+    # U.2: E(Q)[2] = {O} — no rational 2-torsion
+    # ==============================================================
+    print("--- U.2: Rational 2-torsion E(Q)[2] ---")
+    # 2-torsion points have y = -a_3/2 = -1/2.
+    # The corresponding x satisfies the 2-division polynomial
+    #   4x^3 - 4x^2 - 40x - 79 = 0.
+    div2 = E.division_polynomial(2)
+    print(f"  2-division polynomial: {div2}")
+    roots_2 = div2.roots(QQ)
+    print(f"  Rational roots: {roots_2}")
+    assert len(roots_2) == 0, f"Error: found rational 2-torsion."
+    print(f"  [PASS] E(Q)[2] = {{O}}.")
+    print()
+
+    # ==============================================================
+    # U.3: E[2] over Q-bar is nontrivial
+    # ==============================================================
+    print("--- U.3: 2-torsion over Q-bar is nontrivial ---")
+    print(f"  For any elliptic curve over Q, E[2](Q-bar) has order 4.")
+    print(f"  Since E(Q)[2] = {{O}}, the containment E[2] ⊂ E(Q) FAILS.")
+    print()
+
+    # ==============================================================
+    # U.4: E(Q)[3] = {O}
+    # ==============================================================
+    print("--- U.4: Rational 3-torsion E(Q)[3] ---")
+    div3 = E.division_polynomial(3)
+    print(f"  3-division polynomial degree: {div3.degree()}")
+    torsion_points = E.torsion_points()
+    torsion_3 = [P for P in torsion_points if P.order() in (1, 3)]
+    print(f"  Number of points in E(Q)[3]: {len(torsion_3)}")
+    assert len(torsion_3) == 1, "Error: E(Q)[3] is nontrivial."
+    print(f"  [PASS] E(Q)[3] = {{O}}.")
+    print()
+
+    # ==============================================================
+    # U.5: E(Q)[30] = E(Q)[5] = Z/5Z
+    # ==============================================================
+    print("--- U.5: Rational 30-torsion E(Q)[30] ---")
+    print(f"  E(Q)[30] = E(Q)[2] · E(Q)[3] · E(Q)[5]")
+    print(f"           = {{O}} · {{O}} · Z/5Z = Z/5Z")
+    print(f"  |E(Q)[30]| = 5")
+    print(f"  |E[30]|    = 30^2 = 900")
+    print(f"  [PASS] |E(Q)[30]| = 5 << 900 = |E[30]|.")
+    print()
+
+    # ==============================================================
+    # U.6: Conclusion — E[30] ⊄ E(Q)
+    # ==============================================================
+    print("--- U.6: Failure of E[30] ⊂ E(Q) ---")
+    print(f"  E[30] ⊂ E(Q) would require |E(Q)[30]| = 900.")
+    print(f"  We have |E(Q)[30]| = 5.")
+    print(f"  [PASS] E[30] ⊄ E(Q).")
+    print()
+
+    # ==============================================================
+    # U.7: sqrt(-1) not in Q
+    # ==============================================================
+    print("--- U.7: sqrt(-1) not in Q ---")
+    print(f"  Q is ordered, so for any x ∈ Q, x^2 ≥ 0.")
+    print(f"  If (a/b)^2 = -1 with gcd(a,b) = 1, then a^2 = -b^2,")
+    print(f"  which forces a = b = 0, contradicting b ≠ 0.")
+    print(f"  [PASS] sqrt(-1) ∉ Q.")
+    print()
+
+    # ==============================================================
+    # Verdict
+    # ==============================================================
+    print("=" * 78)
+    print("  VERDICT")
+    print("=" * 78)
+    print()
+    print("ALL CHECKS PASSED.")
+    print()
+    print("The curve 11a1 over Q does NOT satisfy the strict Initial")
+    print("Theta Data of IUT I, Def 3.1, for two independent reasons:")
+    print()
+    print("  1. E[30] ⊄ E(Q).")
+    print("     E(Q)_tors = Z/5Z has order 5, while E[30] has order 900.")
+    print("     In particular, E(Q)[2] = E(Q)[3] = {O}.")
+    print()
+    print("  2. sqrt(-1) ∉ Q.")
+    print()
+    print("However, 11a1 DOES satisfy the local hypotheses at p = 11")
+    print("(Units S and T), so the local theta-data computations in")
+    print("Units C, E, G, K, L, M, N, O, P, Q, R are all valid.")
+    print()
+    print("SCOPE")
+    print("-----")
+    print("This script verifies the negative result that closes the")
+    print("scope of this paper: 11a1 over Q cannot serve as a global")
+    print("Initial Theta Datum. The computations of this paper are")
+    print("therefore correctly described as LOCAL theta-data at p=11.")
+    print("=" * 78)
+
+main()

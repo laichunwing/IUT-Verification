@@ -1,0 +1,157 @@
+# 23_spike_term.sage
+#
+# Unit W of "Independent Exact Verification of the Finite-Sum and
+# Scalar-Rearrangement Identities Surrounding IUT IV".
+#
+# Verifies the spike term of the log-theta lattice:
+#   spike_j = (1/2) log(q) - log(Theta_j)
+# where Theta_j = q^(j^2 / (2l)).
+#
+# For l = 13 (11a1), l* = 6, the exact spike coefficients are
+#   (13 - j^2) / 26,  for j = 1, ..., 6.
+#
+# Classification: Exact (rational arithmetic).
+# Runs in SageMath 9.5+ or 10.x. Calls main() unconditionally.
+
+from sage.all import QQ
+
+def main():
+    print("=" * 78)
+    print("  UNIT W: SPIKE TERM OF THE LOG-THETA LATTICE")
+    print("=" * 78)
+    print()
+
+    ell = 13
+    ell_star = (ell - 1) // 2  # = 6
+
+    print(f"  Parameters: l = {ell}, l* = {ell_star}")
+    print(f"  Theta_j = q^(j^2 / (2l)),  j = 1, ..., {ell_star}")
+    print(f"  spike_j = (1/2) log(q) - log(Theta_j)")
+    print(f"          = ((l - j^2) / (2l)) * log(q)")
+    print()
+
+    # ==================================================================
+    # W.1: Exact spike coefficients
+    # ==================================================================
+    print(f"--- W.1: Exact spike coefficients (l - j^2) / (2l) ---")
+    print(f"  {'j':>3} | {'l - j^2':>10} | {'(l - j^2)/(2l)':>16} | {'spike_j / log(q)':>20}")
+    print("-" * 60)
+
+    coeffs = []
+    total = QQ(0)
+    for j in range(1, ell_star + 1):
+        num = ell - j * j
+        coeff = QQ(num) / QQ(2 * ell)
+        coeffs.append(coeff)
+        total += coeff
+        print(f"  {j:>3} | {num:>10} | {str(coeff):>16} | {str(coeff):>20}")
+
+    print()
+    print(f"  Sum of coefficients = {total}")
+    print()
+
+    # ==================================================================
+    # W.2: Verify the exact sum is -1/2
+    # ==================================================================
+    print(f"--- W.2: Verification that the sum equals -1/2 ---")
+    sum_j_squared = ell_star * (ell_star + 1) * (2 * ell_star + 1) // 6
+    numerator_analytic = ell_star * ell - sum_j_squared
+    denominator_analytic = 2 * ell
+    total_analytic = QQ(numerator_analytic) / QQ(denominator_analytic)
+
+    print(f"  Analytical: l* * l - sum(j^2)")
+    print(f"    l* * l = {ell_star * ell}")
+    print(f"    sum(j^2) = {sum_j_squared}")
+    print(f"    numerator = {ell_star * ell} - {sum_j_squared} = {numerator_analytic}")
+    print(f"    denominator = 2 * l = {denominator_analytic}")
+    print(f"    total = {total_analytic}")
+
+    assert total_analytic == QQ(-1) / QQ(2), "Error: analytic sum is not -1/2."
+    assert total == QQ(-1) / QQ(2), "Error: computed sum is not -1/2."
+    print(f"  [PASS] Sum of spike coefficients = -1/2.")
+    print()
+
+    # ==================================================================
+    # W.3: Relation to Theta-pilot and q-pilot coefficients
+    # ==================================================================
+    print(f"--- W.3: Relation to Theta-pilot and q-pilot ---")
+    q_pilot_coeff = QQ(-1) / QQ(2)
+    theta_pilot_coeff = QQ(-1) / QQ(6)
+
+    print(f"  q-pilot coefficient:     {q_pilot_coeff}")
+    print(f"  Theta-pilot coefficient: {theta_pilot_coeff}")
+    print(f"  Sum of spike coeffs:     {total}")
+    print()
+
+    match_sum_q = (total == q_pilot_coeff)
+    print(f"  Sum of spikes == q-pilot coefficient? {match_sum_q}")
+    assert match_sum_q, "Error: sum does not match q-pilot coefficient."
+    print(f"  [PASS] Sum of spikes reproduces the q-pilot log-volume.")
+    print()
+
+    diff = total - theta_pilot_coeff
+    print(f"  Sum - Theta-pilot = {total} - ({theta_pilot_coeff}) = {diff}")
+    print(f"  This is negative because the theta-pilot coefficient")
+    print(f"  (-1/6) is closer to zero than the q-pilot coefficient")
+    print(f"  (-1/2). The spike sum represents the additional deficit")
+    print(f"  contributed by the procession indices j >= 2.")
+    assert diff == QQ(-1) / QQ(3), f"Error: difference is {diff}, expected -1/3."
+    print(f"  [PASS] Difference is exactly -1/3.")
+    print()
+
+    # ==================================================================
+    # W.4: General closed form for arbitrary l
+    # ==================================================================
+    print(f"--- W.4: General closed form for arbitrary odd l >= 5 ---")
+    print(f"  Sum of spike coefficients = (l* * l - sum(j^2)) / (2l)")
+    print(f"                            = (l - 1)(11 - l) / 48")
+    print()
+
+    test_primes = [5, 7, 11, 13, 17, 23]
+    print(f"  {'l':>3} | {'l*':>3} | {'Sum (computed)':>18} | {'(l-1)(11-l)/48':>20} | Match")
+    print("-" * 70)
+
+    for l in test_primes:
+        l_star = (l - 1) // 2
+        s_computed = QQ(0)
+        for j in range(1, l_star + 1):
+            s_computed += QQ(l - j * j) / QQ(2 * l)
+        s_closed = QQ((l - 1) * (11 - l)) / QQ(48)
+        match = (s_computed == s_closed)
+        print(f"  {l:>3} | {l_star:>3} | {str(s_computed):>18} | {str(s_closed):>20} | {match}")
+        assert match, f"Error: closed form fails at l={l}."
+
+    print(f"  [PASS] Closed form holds for all tested primes.")
+    print()
+
+    # ==================================================================
+    # Verdict
+    # ==================================================================
+    print("=" * 78)
+    print("  VERDICT")
+    print("=" * 78)
+    print()
+    print("ALL CHECKS PASSED.")
+    print()
+    print(f"For ell = {ell}, the spike coefficients are:")
+    for j, c in enumerate(coeffs, 1):
+        print(f"  spike_{j} / log(q) = {c}")
+    print()
+    print(f"  Sum of spike coefficients = {total} = -1/2")
+    print()
+    print(f"This exactly matches the q-pilot coefficient -1/2.")
+    print(f"The Theta-pilot coefficient -1/6 differs from the sum")
+    print(f"by exactly -1/3:")
+    print(f"  Sum of spikes - Theta-pilot coefficient = {diff}")
+    print()
+    print("SCOPE")
+    print("-----")
+    print("This script verifies the exact arithmetic of the spike")
+    print("term of the log-theta lattice for 11a1 at l=13.")
+    print()
+    print("It does NOT verify the structural construction of the")
+    print("log-theta lattice, nor the IUT identification of the spike")
+    print("with the q-pilot log-volume.")
+    print("=" * 78)
+
+main()

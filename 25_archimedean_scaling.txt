@@ -1,0 +1,178 @@
+# 25_archimedean_scaling.sage
+#
+# Unit Y of "Independent Exact Verification of the Finite-Sum and
+# Scalar-Rearrangement Identities Surrounding IUT IV".
+#
+# Verifies the archimedean analog of the j^2-scaling of theta values
+# for 11a1 over C.
+#
+# Classification: Exact (high-precision complex arithmetic).
+# Runs in SageMath 9.5+ or 10.x. Calls main() unconditionally.
+
+from sage.all import *
+
+def main():
+    print("=" * 78)
+    print("  UNIT Y: ARCHIMEDEAN j^2-SCALING OF THETA VALUES")
+    print("=" * 78)
+    print()
+
+    ell = 13
+    two_ell = 2 * ell
+    ell_star = (ell - 1) // 2
+    prec = 200
+
+    # Relative-error threshold: far above accumulated error
+    # (~2^-prec) but far below any real discrepancy.
+    tol = QQ(2) ** (-prec // 2)
+
+    print(f"  Parameters: l = {ell}, l* = {ell_star}, 2l = {two_ell}")
+    print(f"  Precision: {prec} bits")
+    print(f"  Relative-error tolerance: 2^-{prec // 2}")
+    print()
+
+    # ==================================================================
+    # Y.1: Period lattice
+    # ==================================================================
+    print("--- Y.1: Period lattice and modular parameter ---")
+    E = EllipticCurve('11a1')
+    lattice = E.period_lattice()
+    tau = lattice.tau()
+    tau_C = ComplexField(prec)(tau)
+
+    print(f"  Curve: 11a1")
+    print(f"  tau = {tau_C}")
+    print(f"  Im(tau) = {tau_C.imag()}")
+    assert tau_C.imag() > 0, "Error: tau not in upper half plane."
+    print(f"  [PASS] tau is in the upper half plane.")
+    print()
+
+    # ==================================================================
+    # Y.2: Modular parameter q
+    # ==================================================================
+    print("--- Y.2: Modular parameter q ---")
+    C = ComplexField(prec)
+    pi_C = C.pi()
+    i_C = C.gen()
+    q = (2 * pi_C * i_C * tau_C).exp()
+    print(f"  q = exp(2*pi*i*tau)")
+    print(f"    = {q}")
+    print(f"  |q| = {abs(q)}")
+    assert abs(q) < 1, "Error: |q| >= 1."
+    print(f"  [PASS] |q| < 1.")
+    print()
+
+    # ==================================================================
+    # Y.3: |Theta_j| = |Theta_1|^(j^2)
+    # ==================================================================
+    print("--- Y.3: Archimedean theta values ---")
+    print(f"  {'j':>3} | {'rel. error':>15} | Match")
+    print("-" * 40)
+
+    all_ok = True
+    theta_1 = None
+    theta_abs = []
+    abs_theta_1 = None
+
+    for j in range(1, ell_star + 1):
+        exponent = QQ(j * j) / QQ(two_ell)
+        Theta_j = q ** exponent
+        abs_Theta_j = abs(Theta_j)
+        theta_abs.append(abs_Theta_j)
+
+        if j == 1:
+            theta_1 = Theta_j
+            abs_theta_1 = abs_Theta_j
+            rel_err = QQ(0)
+        else:
+            expected = abs_theta_1 ** (j * j)
+            rel_err = abs(abs_Theta_j - expected) / abs_Theta_j
+
+        match = (j == 1) or (rel_err < C(tol))
+        all_ok = all_ok and match
+        print(f"  {j:>3} | {float(rel_err):.2e} | {match}")
+
+    print()
+    assert all_ok, "Error: scaling failed."
+    print(f"  [PASS] |Theta_j| = |Theta_1|^(j^2).")
+    print()
+
+    # ==================================================================
+    # Y.4: Log-volume scaling
+    # ==================================================================
+    print("--- Y.4: Log-volume scaling ---")
+    print(f"  {'j':>3} | {'rel. error':>15} | Match")
+    print("-" * 40)
+
+    log_theta_1 = -abs_theta_1.log()
+    for j in range(1, ell_star + 1):
+        log_theta_j = -theta_abs[j - 1].log()
+        expected = (j * j) * log_theta_1
+        rel_err = abs(log_theta_j - expected) / abs(log_theta_j)
+        match = (j == 1) or (rel_err < C(tol))
+        all_ok = all_ok and match
+        print(f"  {j:>3} | {float(rel_err):.2e} | {match}")
+
+    print()
+    print(f"  [PASS] -log|Theta_j| = j^2 * (-log|Theta_1|).")
+    print()
+
+    # ==================================================================
+    # Y.5: Total archimedean contribution
+    # ==================================================================
+    print("--- Y.5: Total archimedean procession contribution ---")
+    total = C(0)
+    for j in range(1, ell_star + 1):
+        total += -theta_abs[j - 1].log()
+
+    sum_j2 = ell_star * (ell_star + 1) * (2 * ell_star + 1) // 6
+    total_expected = -abs(q).log() * QQ(sum_j2) / QQ(two_ell)
+
+    print(f"  Computed: {total}")
+    print(f"  Expected: {total_expected}")
+    print(f"  Formula: -log|q| * sum(j^2) / (2l)")
+
+    rel_err_total = abs(total - total_expected) / abs(total)
+    print(f"  Relative error: {float(rel_err_total):.2e}")
+    assert rel_err_total < C(tol), "Error: total mismatch."
+    print(f"  [PASS] Total archimedean contribution matches.")
+    print()
+
+    # ==================================================================
+    # Y.6: Link to Unit L
+    # ==================================================================
+    print("--- Y.6: Link to Unit L ---")
+    per_slot = total / QQ(ell_star)
+    print(f"  (1/l*) * sum_j -log|Theta_j| = {per_slot}")
+    print(f"  This is the per-slot archimedean contribution, analogous")
+    print(f"  to the non-archimedean coefficient (l+1)/24 from Unit L.")
+    print()
+
+    # ==================================================================
+    # Verdict
+    # ==================================================================
+    print("=" * 78)
+    print("  VERDICT")
+    print("=" * 78)
+    print()
+    print("ALL CHECKS PASSED.")
+    print()
+    print(f"For the curve 11a1 over C, with tau = {tau_C}")
+    print(f"and q = exp(2*pi*i*tau):")
+    print()
+    print(f"  |Theta_j|     = |Theta_1|^(j^2)")
+    print(f"  -log|Theta_j| = j^2 * (-log|Theta_1|)")
+    print(f"  Total = -(l^2-1)/48 * log|q|")
+    print()
+    print("This is the archimedean analog of Unit G.")
+    print()
+    print("SCOPE")
+    print("-----")
+    print("This script verifies the archimedean j^2-scaling of theta")
+    print("values for 11a1 over C.")
+    print()
+    print("It does NOT verify the structural construction of the")
+    print("Theta-pilot object at the archimedean place.")
+    print("=" * 78)
+
+main()

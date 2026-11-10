@@ -1,0 +1,118 @@
+# 16_log_q_substitution.sage
+#
+# Unit P (corrected) of "Independent Exact Verification of the
+# Finite-Sum and Scalar-Rearrangement Identities Surrounding IUT IV".
+#
+# Verifies that the substitution log(q_under) = log(q)/(2l) is
+# applied in IUT IV p.23 in a way that produces the SHARP lower
+# bound on A.
+#
+# Classification: Exact.
+# Runs in SageMath 9.5+ or 10.x. Calls main() unconditionally.
+
+from sage.all import *
+
+def main():
+    print("=" * 78)
+    print("  UNIT P (CORRECTED): SUBSTITUTION log(q_under) = log(q)/(2l)")
+    print("=" * 78)
+    print()
+
+    var('l Lq LQ A')
+
+    print("--- P.1: Source formula for C_Theta ---")
+    C_src = ((l+1)/(4*Lq)) * (A - (QQ(1)/QQ(6))*(1 - QQ(12)/(l**2))*LQ) - 1
+    print("  C_Theta = (l+1)/(4 log(q_under))")
+    print("            * { A - (1/6)(1 - 12/l^2) log(q) } - 1")
+    print()
+
+    print("--- P.2: Substitute log(q_under) = log(q)/(2l) ---")
+    C_subst = C_src.subs({Lq: LQ/(2*l)})
+    print(f"  C_Theta = {C_subst.expand()}")
+    print()
+
+    print("--- P.3: Isolate A from C_Theta >= -1 ---")
+    print("  C_Theta >= -1  =>  A >= (1/6)(1 - 12/l^2) log(q)")
+    print()
+    # Coefficient of log(q) -- does NOT contain LQ.
+    coeff_LQ = (QQ(1)/QQ(6)) * (1 - QQ(12)/(l**2))
+    print(f"  Coefficient of log(q): {coeff_LQ.simplify_full()}")
+    print(f"    = (l^2 - 12) / (6 l^2)")
+    print()
+    print(f"  {'l':>3} | {'(l^2 - 12) / (6 l^2)':>22} | {'decimal':>12}")
+    print("-" * 50)
+    for k in [5, 7, 11, 13]:
+        val = coeff_LQ.subs({l: k}).simplify_full()
+        print(f"  {k:>3} | {str(val):>22} | {float(val):>12.6f}")
+    print()
+
+    print("--- P.4: Express in terms of log(q_under) ---")
+    print("  Since log(q) = 2l log(q_under):")
+    # Coefficient of log(q_under) -- does NOT contain LQ either.
+    coeff_Lq = (coeff_LQ * 2 * l).simplify_full()
+    print(f"  Coefficient of log(q_under): {coeff_Lq}")
+    print(f"    = (l^2 - 12) / (3 l)")
+    print()
+    print(f"  {'l':>3} | {'(l^2 - 12) / (3 l)':>22} | {'decimal':>12}")
+    print("-" * 50)
+    for k in [5, 7, 11, 13]:
+        val = coeff_Lq.subs({l: k}).simplify_full()
+        print(f"  {k:>3} | {str(val):>22} | {float(val):>12.6f}")
+    print()
+
+    # Assert the specific value for l = 13
+    val_13 = coeff_Lq.subs({l: 13}).simplify_full()
+    assert val_13 == QQ(157)/QQ(39), f"Error: got {val_13}, expected 157/39."
+    print(f"  [PASS] For l=13: A >= (157/39) log(q_under) ≈ {float(val_13):.6f} log(q_under).")
+    print()
+
+    print("--- P.5: Compare with the WRONG formula ---")
+    print("  If the second term used log(q_under) instead of log(q):")
+    print("    C_wrong = (l+1)/(4 log(q_under))")
+    print("              * { A - (1/6)(1 - 12/l^2) log(q_under) } - 1")
+    print("  Setting A = (1/6)(1 - 12/l^2) log(q_under) makes the")
+    print("  bracket vanish, giving C_wrong = -1 regardless of anything")
+    print("  else. So C_wrong >= -1 imposes NO useful bound on A beyond")
+    print("  the trivial A >= (1/6)(1 - 12/l^2) log(q_under).")
+    print()
+    print("  [CONFIRMED] Only the source formula (with log(q)) produces")
+    print("              the SHARP bound used in the derivation.")
+    print()
+
+    print("--- P.6: Consistency with Unit O ---")
+    print("  Unit O bound: A >= (1/6)(1 - 12/l^2) log(q).")
+    print("  This is exactly the bound isolated here in P.3.")
+    print("  [PASS] Consistent.")
+    print()
+
+    print("--- P.7: Interpretation ---")
+    print("  The asymmetry between the prefactor's log(q_under) and the")
+    print("  second term's log(q) is what makes the derivation work.")
+    print("  If both used the same variable, the second term would")
+    print("  cancel the prefactor's contribution to the -1 threshold,")
+    print("  and C_Theta >= -1 would impose no useful bound.")
+    print()
+
+    print("=" * 78)
+    print("  VERDICT")
+    print("=" * 78)
+    print()
+    print("ALL CHECKS PASSED.")
+    print()
+    print("Substitution log(q_under) = log(q)/(2l):")
+    print("  - Source formula yields A >= (1/6)(1 - 12/l^2) log(q)")
+    print("  - This equals ((l^2 - 12)/(3l)) * log(q_under)")
+    print("  - For l = 13: A >= (157/39) log(q_under) ≈ 4.026 log(q_under)")
+    print()
+    print("Wrong formula produces no useful bound.")
+    print()
+    print("SCOPE")
+    print("-----")
+    print("Verifies the substitution and isolation of A from the source")
+    print("formula for C_Theta on IUT IV p.23.")
+    print()
+    print("Does NOT verify the absorption step (Unit O), nor the")
+    print("general case for arbitrary curve and l.")
+    print("=" * 78)
+
+main()

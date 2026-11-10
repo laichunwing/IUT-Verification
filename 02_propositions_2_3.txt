@@ -1,0 +1,251 @@
+# 02_propositions_2_3.sage
+#
+# Unit B of "Independent Exact Verification of the Finite-Sum and
+# Scalar-Rearrangement Identities Surrounding IUT IV".
+#
+# Verifies, in exact rational arithmetic, Propositions 2 and 3 of
+# Urahigashi's fifth report, plus the boundary check of the IUT IV
+# Theorem 1.10 terminal estimate:
+#
+#   Proposition 2:
+#     K_tau - K_chi           = H/(2 l^2)
+#     (K_tau - K_chi) / Q     = 1/l
+#     tau - chi               = 12/(l^2 (l+1))
+#     tau/chi - 1             = 1/l
+#
+#   Proposition 3 (for l >= 7):
+#     F_chi < F_tau
+#     F_tau - F_chi           = 12 l / ((l^2 - 12)(l(l+1) - 12))
+#     F_tau/F_chi - 1         = 12 / ((l+1)(l^2 - 12))
+#
+#   Boundary (IUT IV Theorem 1.10, Step (viii)):
+#     (1 - 12/l^2)^{-1} (1 + 12 d_mod/l)  <=  1 + 20 d_mod/l
+#     holds at (l,d_mod) = (7,1), (7,2), (11,1);
+#     fails at (l,d_mod) = (5,1).
+#
+# Classification: Exact (rational arithmetic in QQ, no floating point).
+#
+# Runs in SageMath 9.5+ or 10.x. Uses only QQ.
+# Calls main() unconditionally (no __name__ guard).
+
+from sage.all import QQ
+
+# ------------------------------------------------------------------
+# Constants and expressions
+# ------------------------------------------------------------------
+
+def quantities(l):
+    """Return (c, r, b, chi, tau) as exact rationals."""
+    l = int(l)
+    c   = QQ(l + 1) / QQ(4)
+    r   = QQ(1) / QQ(2 * l)
+    b   = QQ(l + 1) / QQ(24)
+    chi = QQ(12) / QQ(l * (l + 1))
+    tau = QQ(12) / QQ(l * l)
+    return c, r, b, chi, tau
+
+def K(t, c, r, H, D):
+    """The numerical expression K_t(H, D)."""
+    return c * (D - (1 - t) * H / QQ(6)) - r * H
+
+def F(t):
+    """Reciprocal factor F_t = 1/(1 - t)."""
+    return QQ(1) / (QQ(1) - t)
+
+# ------------------------------------------------------------------
+# Proposition 2
+# ------------------------------------------------------------------
+
+def check_prop2(l):
+    """Run all Proposition 2 assertions for a single l. Returns (checks, values)."""
+    l = int(l)
+    c, r, b, chi, tau = quantities(l)
+
+    H = QQ(1)   # H > 0; both sides scale linearly in H, so H=1 is WLOG
+    D = QQ(0)   # D cancels in the difference K_tau - K_chi
+
+    K_chi = K(chi, c, r, H, D)
+    K_tau = K(tau, c, r, H, D)
+    diff  = K_tau - K_chi
+    Qval  = r * H
+
+    u    = b * tau
+    eps  = u - r
+
+    checks = [
+        ("P2  u = b*tau = (l+1)/(2 l^2)",        u  == QQ(l + 1) / QQ(2 * l * l)),
+        ("P2  eps = u - r = 1/(2 l^2)",          eps == QQ(1) / QQ(2 * l * l)),
+        ("P2  K_tau - K_chi = H/(2 l^2)",        diff == H / QQ(2 * l * l)),
+        ("P2  (K_tau - K_chi)/Q = 1/l",          diff / Qval == QQ(1) / QQ(l)),
+        ("P2  tau - chi = 12/(l^2 (l+1))",       tau - chi == QQ(12) / QQ(l * l * (l + 1))),
+        ("P2  tau/chi - 1 = 1/l",                tau / chi - 1 == QQ(1) / QQ(l)),
+    ]
+    values = dict(u=u, eps=eps, diff=diff, diff_over_Q=diff / Qval,
+                  tau_minus_chi=tau - chi, tau_over_chi_minus_1=tau / chi - 1)
+    return checks, values
+
+# ------------------------------------------------------------------
+# Proposition 3
+# ------------------------------------------------------------------
+
+def check_prop3(l):
+    """Run all Proposition 3 assertions for a single l (requires l >= 7)."""
+    l = int(l)
+    c, r, b, chi, tau = quantities(l)
+
+    F_chi = F(chi)
+    F_tau = F(tau)
+
+    diff_pred = QQ(12 * l) / (QQ(l * l - 12) * QQ(l * (l + 1) - 12))
+    quot_pred = QQ(12) / (QQ(l + 1) * QQ(l * l - 12))
+
+    checks = [
+        ("P3  0 < chi < tau < 1",                              QQ(0) < chi and chi < tau and tau < QQ(1)),
+        ("P3  F_chi < F_tau",                                  F_chi < F_tau),
+        ("P3  F_tau - F_chi = 12 l / ((l^2-12)(l(l+1)-12))",   F_tau - F_chi == diff_pred),
+        ("P3  F_tau/F_chi - 1 = 12 / ((l+1)(l^2-12))",         F_tau / F_chi - 1 == quot_pred),
+    ]
+    values = dict(F_chi=F_chi, F_tau=F_tau,
+                  F_diff=F_tau - F_chi, F_quot_minus_1=F_tau / F_chi - 1)
+    return checks, values
+
+# ------------------------------------------------------------------
+# Boundary: IUT IV Theorem 1.10 terminal estimate
+# ------------------------------------------------------------------
+
+def check_terminal(l, d_mod):
+    """Return (holds, lhs, rhs) for the terminal estimate."""
+    l = QQ(l); d_mod = QQ(d_mod)
+    lhs = QQ(1) / (QQ(1) - QQ(12) / (l * l)) * (QQ(1) + QQ(12) * d_mod / l)
+    rhs = QQ(1) + QQ(20) * d_mod / l
+    return lhs <= rhs, lhs, rhs
+
+# ------------------------------------------------------------------
+# Main
+# ------------------------------------------------------------------
+
+def main():
+    # Unit B primes: odd primes l >= 7 (Proposition 3 requires l >= 7;
+    # the fifth report's Proposition 2 alone also holds at l = 5, which is
+    # exercised in the boundary check below).
+    primes = [7, 11, 13, 17, 19, 23, 29, 31, 47, 101, 157, 1009]
+
+    print("=" * 78)
+    print("  UNIT B: PROPOSITIONS 2 AND 3 OF THE FIFTH REPORT")
+    print("  Exact rational arithmetic (QQ). Odd primes l >= 7.")
+    print("=" * 78)
+
+    all_ok = True
+
+    # ---- Summary table matching the paper's Table 2 ----
+    print()
+    print(f"{'l':>6} | {'K_tau-K_chi':>14} | {'(K_tau-K_chi)/Q':>16} | "
+          f"{'tau-chi':>14} | {'tau/chi-1':>10}")
+    print("-" * 78)
+
+    for l in primes:
+        ch2, v2 = check_prop2(l)
+        ok = all(b for _, b in ch2)
+        all_ok = all_ok and ok
+        print(f"{l:>6} | {str(v2['diff']):>14} | {str(v2['diff_over_Q']):>16} | "
+              f"{str(v2['tau_minus_chi']):>14} | {str(v2['tau_over_chi_minus_1']):>10}")
+
+    # ---- Proposition 3 summary ----
+    print()
+    print(f"{'l':>6} | {'F_chi':>14} | {'F_tau':>14} | {'F_tau-F_chi':>14} | {'F_tau/F_chi-1':>14}")
+    print("-" * 78)
+    for l in primes:
+        ch3, v3 = check_prop3(l)
+        ok = all(b for _, b in ch3)
+        all_ok = all_ok and ok
+        print(f"{l:>6} | {str(v3['F_chi']):>14} | {str(v3['F_tau']):>14} | "
+              f"{str(v3['F_diff']):>14} | {str(v3['F_quot_minus_1']):>14}")
+
+    # ---- Boundary check (Table 3) ----
+    print()
+    print("--- IUT IV terminal estimate: (1-12/l^2)^(-1)(1+12 d_mod/l) <= 1 + 20 d_mod/l ---")
+    print(f"{'l':>4} | {'d_mod':>5} | {'LHS':>10} | {'RHS':>8} | {'holds':>6}")
+    print("-" * 48)
+    boundary = [(5, 1), (7, 1), (7, 2), (11, 1)]
+    for (l, d) in boundary:
+        holds, lhs, rhs = check_terminal(l, d)
+        print(f"{l:>4} | {d:>5} | {str(lhs):>10} | {str(rhs):>8} | {str(holds):>6}")
+        # The paper claims: fails at (5,1), holds at (7,1),(7,2),(11,1)
+        if (l, d) == (5, 1):
+            all_ok = all_ok and (not holds)
+        else:
+            all_ok = all_ok and holds
+
+    # ---- Detailed check log ----
+    print()
+    print("=" * 78)
+    print("  DETAILED CHECK LOG")
+    print("=" * 78)
+
+    for l in primes:
+        ch2, v2 = check_prop2(l)
+        ch3, v3 = check_prop3(l)
+        print(f"\n l = {l}")
+        print(f"   --- Proposition 2 ---")
+        print(f"   u           = {v2['u']}")
+        print(f"   eps         = {v2['eps']}")
+        print(f"   K_tau-K_chi = {v2['diff']}")
+        print(f"   /Q          = {v2['diff_over_Q']}")
+        print(f"   tau-chi     = {v2['tau_minus_chi']}")
+        print(f"   tau/chi-1   = {v2['tau_over_chi_minus_1']}")
+        for name, b in ch2:
+            print(f"   {'PASS' if b else 'FAIL'}  {name}")
+        print(f"   --- Proposition 3 ---")
+        print(f"   F_chi       = {v3['F_chi']}")
+        print(f"   F_tau       = {v3['F_tau']}")
+        print(f"   F_tau-F_chi = {v3['F_diff']}")
+        print(f"   F_tau/F_chi - 1 = {v3['F_quot_minus_1']}")
+        for name, b in ch3:
+            print(f"   {'PASS' if b else 'FAIL'}  {name}")
+
+    # ---- Verdict ----
+    print()
+    print("=" * 78)
+    print("  VERDICT")
+    print("=" * 78)
+    if all_ok:
+        print("ALL EXACT CHECKS PASSED for all twelve primes,")
+        print("and the boundary check matches the paper's claim")
+        print("(fails at l=5, holds at l=7 and l=11).")
+    else:
+        print("FAILURES DETECTED. See log above.")
+
+    # ---- Scope ----
+    print()
+    print("SCOPE")
+    print("-----")
+    print("This script verifies, in exact rational arithmetic, the identities")
+    print("of Propositions 2 and 3 of the fifth report, for every l in:")
+    print(" ", primes)
+    print()
+    print("  Proposition 2:")
+    print("    K_tau - K_chi = H/(2 l^2)   (H=1, D=0; WLOG by linearity)")
+    print("    (K_tau - K_chi) / Q = 1/l")
+    print("    tau - chi = 12/(l^2 (l+1))")
+    print("    tau/chi - 1 = 1/l")
+    print()
+    print("  Proposition 3:")
+    print("    0 < chi < tau < 1")
+    print("    F_chi < F_tau")
+    print("    F_tau - F_chi = 12 l / ((l^2-12)(l(l+1)-12))")
+    print("    F_tau/F_chi - 1 = 12 / ((l+1)(l^2-12))")
+    print()
+    print("  Boundary check:")
+    print("    (1-12/l^2)^(-1)(1+12 d_mod/l) <= 1 + 20 d_mod/l")
+    print("    holds at (7,1), (7,2), (11,1); fails at (5,1).")
+    print()
+    print("These are exact rational identities. They do NOT establish:")
+    print("  - that procession normalization is structurally valid in IUT;")
+    print("  - that the Scholze-Stix approximation can be replaced by these")
+    print("    bounds;")
+    print("  - that Corollary 3.12 follows;")
+    print("  - anything about a possible-image hull, the full C_Theta, or")
+    print("    the Belyi reduction.")
+    print("=" * 78)
+
+main()

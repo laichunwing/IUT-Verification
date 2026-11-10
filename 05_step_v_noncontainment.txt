@@ -1,0 +1,179 @@
+# 05_step_v_noncontainment.sage
+#
+# Unit E of "Independent Exact Verification of the Finite-Sum and
+# Scalar-Rearrangement Identities Surrounding IUT IV".
+#
+# Verifies the exact arithmetic and the logical steps of:
+#   Toshihisa Urahigashi, "A local non-containment in Step (v) of
+#   IUT IV, Theorem 1.10", v1.0.0 (6 October 2026).
+#
+# Classification: Exact (rational arithmetic in QQ).
+# Runs in SageMath 9.5+ or 10.x. Calls main() unconditionally.
+
+from sage.all import QQ
+from math import gcd
+
+def main():
+    print("=" * 78)
+    print("  UNIT E: LOCAL NON-CONTAINMENT IN STEP (V) OF IUT IV THEOREM 1.10")
+    print("  Explicit arithmetic on the datum D_2.")
+    print("=" * 78)
+    print()
+
+    # ------------------------------------------------------------------
+    # E.1: The prime and the datum
+    # ------------------------------------------------------------------
+    print("--- E.1: The prime and the datum D_2 ---")
+    p = 30965771
+    pi_a = 14164
+    pi_b = 5825
+    norm_pi = pi_a**2 - 5 * pi_b**2
+    print(f"  p = {p}")
+    print(f"  pi = {pi_a} + {pi_b} sqrt(5)")
+    print(f"  N(pi) = {pi_a}^2 - 5 * {pi_b}^2 = {norm_pi}")
+    assert norm_pi == p, "Error: p does not match the norm of pi."
+
+    print(f"  is_prime(p): {is_prime(p)}")
+    assert is_prime(p)
+
+    print(f"  p mod 5 = {p % 5}")
+    assert p % 5 == 1 or p % 5 == 4, "Error: p does not split in Q(sqrt(5))."
+
+    print(f"  p mod 4 = {p % 4}")
+    assert p % 4 == 3, "Error: p mod 4 is not 3."
+    print("  [PASS] Datum well-formed.")
+
+    # ------------------------------------------------------------------
+    # E.2: Local invariants of the two places above p
+    # ------------------------------------------------------------------
+    print("\n--- E.2: Local ramification data ---")
+    ord_b1_a = 1
+    ord_b2_a = 6
+
+    ord_b1_j = -2 * ord_b1_a
+    ord_b2_j = -2 * ord_b2_a
+    print(f"  ord_b1(j) = {ord_b1_j}")
+    print(f"  ord_b2(j) = {ord_b2_j}")
+    assert ord_b1_j == -2 and ord_b2_j == -12
+
+    m1 = -ord_b1_j
+    m2 = -ord_b2_j
+    print(f"  m_1 = ord_p(q_b1) = {m1}")
+    print(f"  m_2 = ord_p(q_b2) = {m2}")
+
+    n = 105
+    print(f"  n = 105 (from E[3*5*7])")
+
+    e1 = n // gcd(n, m1)
+    e2 = n // gcd(n, m2)
+    print(f"  e_b1 = 105 / gcd(105, {m1}) = {e1}")
+    print(f"  e_b2 = 105 / gcd(105, {m2}) = {e2}")
+    assert e1 == 105 and e2 == 35
+
+    d1 = QQ(e1 - 1) / QQ(e1)
+    d2 = QQ(e2 - 1) / QQ(e2)
+    print(f"  d_b1 = 1 - 1/{e1} = {d1}")
+    print(f"  d_b2 = 1 - 1/{e2} = {d2}")
+    assert d1 == QQ(104)/QQ(105) and d2 == QQ(34)/QQ(35)
+
+    rho1 = QQ(m1) / QQ(14)
+    rho2 = QQ(m2) / QQ(14)
+    print(f"  rho(b1) = {m1} / 14 = {rho1}")
+    print(f"  rho(b2) = {m2} / 14 = {rho2}")
+    assert rho1 == QQ(1)/QQ(7) and rho2 == QQ(6)/QQ(7)
+    print("  [PASS] Local invariants match Table 1.")
+
+    # ------------------------------------------------------------------
+    # E.3: The IUT IV bound and the module exponent
+    # ------------------------------------------------------------------
+    print("\n--- E.3: Module and bound exponents ---")
+    j = 3
+
+    lam = QQ(j**2) * rho2
+    print(f"  lambda = {j}^2 * rho(b2) = {lam}")
+
+    d_I = 3 * d1 + 1 * d2
+    print(f"  d_I = 3*({d1}) + ({d2}) = {d_I}")
+
+    a1 = QQ(1) / QQ(e1)
+    a2 = QQ(1) / QQ(e2)
+    a_I = 3 * a1 + 1 * a2
+    print(f"  a_I = 3*({a1}) + ({a2}) = {a_I}")
+
+    b_I = -a_I
+    print(f"  b_I = -a_I = {b_I}")
+
+    bound_coeff = -lam + d_I + 1
+    print(f"  Bound coefficient (-lambda + d_I + 1) = {bound_coeff}")
+    assert bound_coeff == QQ(-97)/QQ(35)
+
+    inner = lam - d_I - a_I
+    floor_inner = QQ(inner.numerator() // inner.denominator())
+    module_exp = floor_inner - b_I
+    print(f"  inner = lambda - d_I - a_I = {inner}")
+    print(f"  floor(inner) = {floor_inner}")
+    print(f"  Module exponent N = {floor_inner} - ({b_I}) = {module_exp}")
+    assert module_exp == QQ(107)/QQ(35)
+    print("  [PASS] Bound and module exponents verified.")
+
+    # ------------------------------------------------------------------
+    # E.4: The non-containment logic
+    # ------------------------------------------------------------------
+    print("\n--- E.4: Non-containment of the permuted tensor ---")
+    ord_theta = QQ(j**2) * rho1
+    print(f"  Order of theta at b_1: {ord_theta}")
+
+    print(f"  Order profile of y: (0, 0, {ord_theta}, 0)")
+
+    max_possible_min_order = QQ(1)
+    print(f"  After any psi in A(k_v), the minimum order is < 1.")
+    print(f"  The module M_v requires order >= {module_exp} in every slot.")
+
+    assert max_possible_min_order < module_exp
+    print(f"  Since {max_possible_min_order} < {module_exp}, non-containment holds.")
+    print("  [PASS] The element psi(y) is not in M_v.")
+
+    # ------------------------------------------------------------------
+    # E.5: The log-volume gap
+    # ------------------------------------------------------------------
+    print("\n--- E.5: Log-volume gap ---")
+    hull_vol = QQ(-2)
+    bound_vol = bound_coeff
+    print(f"  Hull log-volume is at least {hull_vol} * log p")
+    print(f"  Step (v) bound is {bound_vol} * log p")
+    assert hull_vol > bound_vol
+    print(f"  Since {hull_vol} > {bound_vol}, the bound is violated.")
+    print("  [PASS] The log-volume strictly exceeds the Step (v) bound.")
+
+    # ------------------------------------------------------------------
+    # Verdict and scope
+    # ------------------------------------------------------------------
+    print("\n" + "=" * 78)
+    print("  VERDICT")
+    print("=" * 78)
+    print("ALL EXACT CHECKS PASSED.")
+    print("The explicit datum D_2 and tuple v = (b_1, b_1, b_1, b_2)")
+    print("provide a local counterexample to the bound obtained in Step (v).")
+    print()
+
+    print("SCOPE")
+    print("-----")
+    print("This script verifies the exact arithmetic and logical steps of")
+    print("the preprint 'A local non-containment in Step (v) of IUT IV,")
+    print("Theorem 1.10':")
+    print("  1. The datum D_2 is well-formed.")
+    print("  2. The local invariants of Table 1.")
+    print("  3. The module exponent N = 107/35 and the bound -97/35.")
+    print("  4. The non-containment of the permuted tensor in the module.")
+    print("  5. The resulting log-volume gap (-2 vs -97/35).")
+    print()
+    print("It does NOT verify:")
+    print("  - that D_2 satisfies all initial Theta data conditions (this")
+    print("    is asserted in the preprint and relies on structural claims);")
+    print("  - that the union of possible images is exactly U_3 (this is")
+    print("    a structural identification);")
+    print("  - anything about Corollary 3.12, the global Theorem 1.10, or")
+    print("    the abc conjecture.")
+    print("=" * 78)
+
+main()

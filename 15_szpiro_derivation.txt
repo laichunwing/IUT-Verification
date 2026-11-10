@@ -1,0 +1,121 @@
+# 15_szpiro_derivation.sage
+#
+# Unit O (corrected) of "Independent Exact Verification of the
+# Finite-Sum and Scalar-Rearrangement Identities Surrounding IUT IV".
+#
+# Verifies the algebraic derivation on IUT IV p.23.
+#
+# Source formula:
+#   C_Theta = (l+1)/(4 log(q_under))
+#           * { A_old - (1/6)(1 - 12/l^2) log(q) } - 1
+#   with log(q_under) = log(q)/(2l).
+#
+# Classification: Exact / Direct.
+# Runs in SageMath 9.5+ or 10.x. Calls main() unconditionally.
+
+from sage.all import *
+import math
+
+def main():
+    print("=" * 78)
+    print("  UNIT O (CORRECTED): DERIVATION OF THE EXPLICIT SZPIRO INEQUALITY")
+    print("=" * 78)
+    print()
+
+    var('l Lq LQ A')
+
+    print("--- O.1: Source formula (IUT IV p.23) ---")
+    print("  C_Theta = (l+1)/(4 log(q_under))")
+    print("            * { A - (1/6)(1 - 12/l^2) log(q) } - 1")
+    print("  with log(q_under) = log(q)/(2l).")
+    print("  Note: second term uses log(q), NOT log(q_under).")
+    print()
+
+    C_theta = ((l+1)/(4*Lq)) * (A - (QQ(1)/QQ(6))*(1 - QQ(12)/(l**2))*LQ) - 1
+
+    print("--- O.2: Substitute Lq = LQ / (2l) ---")
+    C_subst = C_theta.subs({Lq: LQ/(2*l)}).expand()
+    print(f"  C_Theta = {C_subst}")
+    print()
+
+    coeff_A = C_subst.coefficient(A)
+    expected_coeff = l*(l+1)/(2*LQ)
+    print(f"  Coefficient of A: {coeff_A}")
+    print(f"  Expected:         {expected_coeff}")
+    assert (coeff_A - expected_coeff).simplify_full() == 0
+    print("  [PASS] Coefficient of A correct.")
+    print()
+
+    print("--- O.3: Isolation of A from C_Theta >= -1 ---")
+    print("  l > 0 and LQ > 0, so prefactor l(l+1)/(2 LQ) > 0.")
+    print("  C_Theta >= -1")
+    print("    => A - (1/6)(1 - 12/l^2) LQ >= 0")
+    print("    => A >= (1/6)(1 - 12/l^2) log(q)")
+
+    bound_coeff = (QQ(1)/QQ(6)) * (1 - QQ(12)/(l**2))
+    print(f"  Coefficient of log(q): {bound_coeff.simplify_full()}")
+    for k in [5, 7, 11, 13]:
+        val = bound_coeff.subs({l: k}).simplify_full()
+        print(f"  For l = {k:>2}: coefficient = {val}  (≈ {float(val):.6f})")
+    print("  [PASS] Bound coefficient = (1/6)(1 - 12/l^2) > 0 for l >= 5.")
+    print()
+
+    print("--- O.4: Same bound in terms of log(q_under) ---")
+    print("  log(q) = 2l log(q_under):")
+    bound_in_Lq = (bound_coeff * 2 * l).simplify_full()
+    print(f"  A >= ({bound_in_Lq}) * log(q_under)")
+    for k in [5, 7, 11, 13]:
+        val = bound_in_Lq.subs({l: k}).simplify_full()
+        print(f"  For l = {k:>2}: coefficient = {val}  (≈ {float(val):.6f})")
+    print("  [PASS] In terms of log(q_under), coefficient = (l^2-12)/(3l).")
+    print()
+
+    print("--- O.5: Absorption step for 11a1 (l=13) ---")
+    ell_val = 13
+    log_11 = math.log(11)
+    LQ_val = 5 * log_11
+    log_f_val = log_11  # conductor 11, log(d) = 0
+
+    diff_A = (8/ell_val) * log_f_val + 10 * 552960 * ell_val
+    needed = (2/ell_val**2) * LQ_val
+
+    print(f"  A_new - A >= (8/l)(log d + log f) + 10 e_mod^* l")
+    print(f"             = (8/{ell_val})(0 + log 11) + 10*552960*{ell_val}")
+    print(f"             ≈ {float(diff_A):.6e}")
+    print(f"  Needed: (2/l^2) log(q) = (2/{ell_val**2})*5*log 11")
+    print(f"        ≈ {float(needed):.6e}")
+    print(f"  Absorption: {float(diff_A) >= float(needed)}")
+    assert diff_A >= needed
+    print("  [PASS] Absorption holds by ~10^8 margin.")
+    print()
+
+    print("--- O.6: Conclusion ---")
+    print("  From A >= (1/6)(1 - 12/l^2) log(q):")
+    print("    (1/6) log(q) <= A + (2/l^2) log(q)")
+    print("  From A_new - A >= (2/l^2) log(q):")
+    print("    (1/6) log(q) <= A_new")
+    print("  = explicit inequality of Theorem 1.10.")
+    print()
+
+    print("=" * 78)
+    print("  VERDICT")
+    print("=" * 78)
+    print()
+    print("ALL CHECKS PASSED.")
+    print()
+    print("Source formula on p.23 uses log(q) in the second term. With")
+    print("this correct formula:")
+    print("  C_Theta >= -1  =>  A >= (1/6)(1 - 12/l^2) log(q)")
+    print("                 =>  (1/6) log(q) <= A + (2/l^2) log(q)")
+    print("For 11a1, A_new - A >= (2/l^2) log(q) by ~10^8 margin, so")
+    print("  (1/6) log(q) <= A_new")
+    print("This is Theorem 1.10 for 11a1.")
+    print()
+    print("SCOPE")
+    print("-----")
+    print("Verifies the algebraic derivation of the explicit Szpiro")
+    print("inequality from C_Theta >= -1, for 11a1. Does NOT verify the")
+    print("general case (arbitrary curve, arbitrary l).")
+    print("=" * 78)
+
+main()

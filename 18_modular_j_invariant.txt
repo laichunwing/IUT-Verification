@@ -1,0 +1,120 @@
+# 18_modular_j_invariant.sage
+#
+# Unit R of "Independent Exact Verification of the Finite-Sum and
+# Scalar-Rearrangement Identities Surrounding IUT IV".
+#
+# Verifies the classical Tate uniformization relation for 11a1 at p=11:
+#   j(q_11) = j(11a1)
+#
+# We construct the modular j-function from its q-expansion using
+# j(q) = E_4(q)^3 / Delta(q), evaluate at the explicit Tate parameter
+# q_11, and compare with the exact rational j-invariant of 11a1.
+#
+# Classification: Direct / Exact p-adic.
+# Runs in SageMath 9.5+ or 10.x. Calls main() unconditionally.
+
+from sage.all import *
+
+def main():
+    print("=" * 78)
+    print("  UNIT R: MODULAR J-INVARIANT RELATION FOR 11a1")
+    print("=" * 78)
+    print()
+
+    p = 11
+    prec_q = 60   # Precision for q_11
+    prec = 50     # Target precision for the comparison
+    N = 20        # Number of q-expansion terms
+
+    # --- R.1: Compute the q-expansion of j(q) ---
+    print("--- R.1: Constructing the modular j-function ---")
+    R_series = PowerSeriesRing(QQ, 'q', default_prec=N+1)
+    q = R_series.gen()
+
+    def sigma_3(n):
+        return sum(d**3 for d in divisors(n))
+
+    E4 = 1 + 240 * sum(sigma_3(n) * q**n for n in range(1, N+1))
+    Delta_over_q = prod((1 - q**n)**24 for n in range(1, N+1))
+    qj = E4**3 / Delta_over_q
+
+    print(f"  Computed q * j(q) to O(q^{N})")
+    print(f"  q * j(q) = 1 + {qj[1]} q + {qj[2]} q^2 + {qj[3]} q^3 + ...")
+    print()
+
+    # --- R.2: Get the explicit Tate parameter ---
+    print("--- R.2: Explicit Tate parameter for 11a1 ---")
+    E = EllipticCurve('11a1')
+    q_11 = E.tate_curve(p).parameter(prec=prec_q)
+    v_q = q_11.valuation()
+    print(f"  v_{p}(q_11) = {v_q}")
+    assert v_q == 5, "Error: v_p(q_11) is not 5."
+    print()
+
+    # --- R.3: Evaluate q * j(q) at q_11 ---
+    print("--- R.3: Evaluating q * j(q) at q_11 ---")
+    K = Qp(p, prec=prec_q)
+    val = K(0)
+    for n in range(N, -1, -1):
+        val = val * q_11 + K(qj[n])
+    
+    v_val = val.valuation()
+    print(f"  v(q_11 * j(q_11)) = {v_val}")
+    assert v_val == 0, "Error: q_11 * j(q_11) is not a unit."
+    print("  [PASS] q_11 * j(q_11) is a unit.")
+    print()
+
+    # --- R.4: Compute j(q_11) ---
+    print("--- R.4: Computing j(q_11) ---")
+    j_q11 = val / q_11
+    print(f"  v(j(q_11)) = {j_q11.valuation()}")
+    print(f"  j(q_11) = {str(j_q11)[:100]}...")
+    print()
+
+    # --- R.5: Compare with j(11a1) ---
+    print("--- R.5: Comparison with j(11a1) ---")
+    j_E = E.j_invariant()
+    j_E_K = K(j_E)
+    print(f"  j(11a1) = {j_E}")
+    print(f"  j(11a1) as {p}-adic = {j_E_K}")
+
+    diff = j_q11 - j_E_K
+    v_diff = diff.valuation() if diff != 0 else Infinity
+    print(f"  v_{p}(j(q_11) - j(11a1)) = {v_diff}")
+    print()
+
+    match = (diff == 0) or (v_diff >= prec)
+    print(f"  j(q_11) == j(11a1) to precision {prec}? {match}")
+    print()
+
+    # --- Verdict ---
+    print("=" * 78)
+    print("  VERDICT")
+    print("=" * 78)
+    print()
+    if match:
+        print("ALL CHECKS PASSED.")
+        print()
+        print("The modular j-function evaluated at the explicit Tate")
+        print(f"parameter q_11 for 11a1 reproduces the exact j-invariant")
+        print(f"of the curve to precision {prec}.")
+        print()
+        print(f"  j(q_11) = j(11a1) = {j_E}")
+    else:
+        print("FAILURE: The j-invariants do not match.")
+        if diff != 0:
+            print(f"  Difference: {diff}")
+
+    print()
+    print("SCOPE")
+    print("-----")
+    print("This script verifies the classical Tate uniformization relation")
+    print("j(q_E) = j(E) for the curve 11a1 at p=11.")
+    print()
+    print("It confirms that the Tate parameter q_11 used in Units G, L, Q")
+    print("is the correct one for this curve.")
+    print()
+    print("It does NOT verify the construction of the Theta-link.")
+    print("=" * 78)
+
+main()

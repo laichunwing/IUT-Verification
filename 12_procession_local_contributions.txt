@@ -1,0 +1,107 @@
+# 12_procession_local_contributions.sage
+#
+# Unit L of "Independent Exact Verification of the Finite-Sum and
+# Scalar-Rearrangement Identities Surrounding IUT IV".
+#
+# Closes the loop between the j^2-scaling of theta values (Unit G),
+# the log-volume coefficient (Unit K), and the procession identity (Unit A).
+#
+# At a bad prime p with Tate parameter q of order m = v_p(q), the
+# theta value at level j is Theta_j = q^{j^2 / (2l)}. Its valuation
+# (and hence its log-volume contribution) scales by j^2.
+#
+# The local log-volume contribution at level j is:
+#   mu_j = (j^2 * m) / (2l) * log(p)
+#
+# We verify that the procession-normalized sum of these contributions
+# yields exactly the coefficient (l+1)/24 from Unit A:
+#   (1/l*) * sum_{j=1}^{l*} mu_j = ((l+1)/24) * m * log(p)
+#
+# Classification: Exact (rational arithmetic).
+# Runs in SageMath 9.5+ or 10.x. Calls main() unconditionally.
+
+from sage.all import QQ
+
+def main():
+    print("=" * 78)
+    print("  UNIT L: PROCESSION SUM OF LOCAL LOG-VOLUME CONTRIBUTIONS")
+    print("=" * 78)
+    print()
+
+    # Parameters from the curve 11a1 at p=11, l=13
+    p = 11
+    ell = 13
+    ell_star = (ell - 1) // 2
+    m = 5  # v_11(q_11) = 5
+
+    print(f"  Parameters:")
+    print(f"    p = {p}")
+    print(f"    l = {ell}, l* = {ell_star}")
+    print(f"    m = v_p(q) = {m}")
+    print()
+
+    # We compute the local log-volume contributions mu_j exactly.
+    # The factor m/(2l) is common to all j.
+    # mu_j = (j^2 * m) / (2l)
+    base_factor = QQ(m) / QQ(2 * ell)
+
+    print("--- L.1: Local log-volume contributions at level j ---")
+    print(f"  {'j':>3} | {'mu_j = (j^2 * m) / (2l)':>30}")
+    print("-" * 40)
+
+    raw_sum = QQ(0)
+    for j in range(1, ell_star + 1):
+        mu_j = QQ(j**2) * base_factor
+        raw_sum += mu_j
+        print(f"  {j:>3} | {str(mu_j):>30}")
+
+    print(f"\n  Raw sum: {raw_sum}")
+    print()
+
+    # Procession-normalized sum: divide by l*
+    norm_sum = raw_sum / QQ(ell_star)
+    print("--- L.2: Procession-normalized sum ---")
+    print(f"  (1/l*) * sum(mu_j) = {norm_sum}")
+    print()
+
+    # Expected value from Unit A: (l+1)/24 * m
+    expected_coeff = QQ(ell + 1) / QQ(24)
+    expected_value = expected_coeff * QQ(m)
+    print("--- L.3: Expected value from Unit A ---")
+    print(f"  (l+1)/24 = {expected_coeff}")
+    print(f"  (l+1)/24 * m = {expected_value}")
+    print()
+
+    # Verify equality
+    match = (norm_sum == expected_value)
+    print(f"  Match? {match}")
+    print()
+
+    # Verdict and Scope
+    print("=" * 78)
+    print("  VERDICT")
+    print("=" * 78)
+    if match:
+        print("ALL CHECKS PASSED.")
+        print("The procession-normalized sum of the local log-volume")
+        print("contributions exactly matches the coefficient (l+1)/24")
+        print("from Unit A, scaled by m = v_p(q).")
+    else:
+        print("FAILURES DETECTED.")
+
+    print()
+    print("SCOPE")
+    print("-----")
+    print("This script verifies the exact combination of:")
+    print("  1. The j^2-scaling of theta values (Unit G).")
+    print("  2. The log-volume coefficient formula (Unit K).")
+    print("  3. The procession identity (Unit A).")
+    print()
+    print("It shows that the local p-adic computations at a bad prime")
+    print("exactly reproduce the global procession coefficient (l+1)/24.")
+    print()
+    print("It does NOT verify the structural existence of the Theta-link,")
+    print("nor the global log-volume inequality of IUT IV.")
+    print("=" * 78)
+
+main()

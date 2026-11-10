@@ -1,0 +1,169 @@
+# 19_split_multiplicative.sage
+#
+# Unit S of "Independent Exact Verification of the Finite-Sum and
+# Scalar-Rearrangement Identities Surrounding IUT IV".
+#
+# Verifies that 11a1 has split multiplicative reduction at p=11.
+#
+# Classification: Direct / Exact.
+# Runs in SageMath 9.5+ or 10.x. Calls main() unconditionally.
+
+from sage.all import *
+from math import gcd
+
+def main():
+    print("=" * 78)
+    print("  UNIT S: SPLIT MULTIPLICATIVE REDUCTION AT p=11 FOR 11a1")
+    print("=" * 78)
+    print()
+
+    p = 11
+    ell = 13
+
+    # ==================================================================
+    # S.1: Curve invariants
+    # ==================================================================
+    print("--- S.1: Curve invariants ---")
+    E = EllipticCurve('11a1')
+    N = E.conductor()
+    Delta = E.discriminant()
+    j = E.j_invariant()
+
+    print(f"  Conductor N = {N}")
+    print(f"  Discriminant Delta = {Delta}")
+    print(f"  j-invariant = {j}")
+
+    assert N == 11, "Error: conductor is not 11."
+    v_Delta = QQ(Delta).valuation(p)
+    print(f"  v_{p}(Delta_min) = {v_Delta}")
+    assert v_Delta == 5, "Error: v_p(Delta) is not 5."
+    print("  [PASS] Conductor 11, v_11(Delta) = 5.")
+    print()
+
+    # ==================================================================
+    # S.2: Local data at p=11
+    # ==================================================================
+    print(f"--- S.2: Local data at p={p} ---")
+    ld = E.local_data(p)
+
+    kodaira = ld.kodaira_symbol()
+    tamagawa = ld.tamagawa_number()
+    bad_type = ld.bad_reduction_type()
+
+    print(f"  Kodaira symbol: {kodaira}")
+    print(f"  Tamagawa number: {tamagawa}")
+    print(f"  Bad reduction type: {bad_type}")
+    print(f"    (0 = good, 1 = split multiplicative, -1 = nonsplit)")
+
+    kodaira_str = str(kodaira).replace('_', '').replace(' ', '')
+    assert kodaira_str == 'I5', f"Error: Kodaira is {kodaira}, expected I5."
+    print(f"  [PASS] Kodaira type I_5 (multiplicative of order 5).")
+
+    assert bad_type == 1, "Error: reduction is not split multiplicative."
+    print(f"  [PASS] Split multiplicative reduction.")
+
+    assert tamagawa == 5, "Error: Tamagawa number is not 5."
+    print(f"  [PASS] Tamagawa number 5.")
+    print()
+
+    # ==================================================================
+    # S.3: Frobenius trace a_11
+    # Use Sage's built-in trace of Frobenius, which handles bad reduction.
+    # ==================================================================
+    print(f"--- S.3: Frobenius trace a_{p} ---")
+    # E.ap(p) computes the trace of Frobenius at p for E over Q.
+    a_p = E.ap(p)
+    print(f"  a_{p} = {a_p}")
+    print(f"  Split multiplicative reduction <=> a_{p} = 1.")
+    assert a_p == 1, f"Error: a_{p} = {a_p}, expected 1."
+    print(f"  [PASS] a_{p} = 1 (split multiplicative).")
+    print()
+
+    # Cross-check via the minimal regular model over F_11.
+    # The minimal model E has singular reduction at 11;
+    # E.reduction(11) gives the group of components.
+    print(f"  Cross-check via reduction:")
+    try:
+        red = E.reduction(p)
+        print(f"    Reduction type: {red}")
+        print(f"    Tamagawa number from reduction: {red.tamagawa_number()}")
+    except Exception as ex:
+        print(f"    (reduction cross-check skipped: {type(ex).__name__})")
+    print()
+
+    # ==================================================================
+    # S.4: IUT I, Def 3.1(c) condition
+    # ==================================================================
+    print(f"--- S.4: IUT I, Def 3.1(c): l = {ell} does not divide v_p(q_p) ---")
+    q_11 = E.tate_curve(p).parameter(prec=50)
+    v_q = q_11.valuation()
+
+    print(f"  v_{p}(q_{p}) = {v_q}")
+    print(f"  l = {ell}")
+    print(f"  l | v_{p}(q_{p})? {v_q % ell == 0}")
+    assert v_q % ell != 0, "Error: l divides v_p(q_p)."
+    print(f"  [PASS] {ell} does not divide {v_q}.")
+    print()
+
+    # ==================================================================
+    # S.5: Kummer extension Q_11(q_11^(1/13))
+    # ==================================================================
+    print(f"--- S.5: Kummer extension Q_11(q_11^(1/{ell})) ---")
+    g = gcd(v_q, ell)
+    print(f"  gcd(v_p(q), l) = gcd({v_q}, {ell}) = {g}")
+    assert g == 1, "Error: gcd(v_p(q), l) is not 1."
+    print(f"  [PASS] gcd(v_p(q), l) = 1.")
+
+    # The unit part u = q_11 / 11^5 has a 13th root in Q_11
+    # because Z_11^× ≅ (Z/10) × Z_11, and the 13th power map is bijective
+    # on both factors (gcd(13, 10) = 1, and 13 is a unit in Z_11).
+    # Hence Q_11(q_11^(1/13)) = Q_11(11^(1/13)).
+    print(f"  The unit part u = q_11 / 11^5 has a 13th root in Q_11 because:")
+    print(f"  Z_11^× ≅ (Z/10) × Z_11, and gcd(13, 10) = {gcd(ell, p-1)},")
+    print(f"  and 13 is a unit in Z_11.")
+    print(f"  Hence Q_11(q_11^(1/{ell})) = Q_11(11^(1/{ell})).")
+    print()
+
+    # Construct Q_11(11^(1/13)) via the Eisenstein polynomial x^13 - 11
+    print(f"  Constructing Q_11(11^(1/{ell})) as Qp(11).extension(x^{ell} - 11):")
+    R = PolynomialRing(Qp(p, prec=50), 'x')
+    K_ell = Qp(p, prec=50).extension(R.gen()**ell - p, names='rho')
+    e_K = K_ell.e()
+    f_K = K_ell.f()
+
+    print(f"    e = {e_K}, f = {f_K}")
+    assert e_K == ell, f"Error: e = {e_K}, expected {ell}."
+    assert f_K == 1, f"Error: f = {f_K}, expected 1."
+    print(f"  [PASS] Extension has ramification index {ell} and residue degree 1.")
+    print()
+
+    # ==================================================================
+    # Verdict
+    # ==================================================================
+    print("=" * 78)
+    print("  VERDICT")
+    print("=" * 78)
+    print()
+    print("ALL CHECKS PASSED.")
+    print()
+    print("The curve 11a1 satisfies all local hypotheses of IUT at p=11:")
+    print(f"  - Conductor N = 11")
+    print(f"  - v_11(Delta_min) = 5, Kodaira type I_5")
+    print(f"  - Split multiplicative reduction (a_11 = 1)")
+    print(f"  - Tamagawa number c_11 = 5")
+    print(f"  - v_11(q_11) = 5, and 13 does not divide 5")
+    print(f"  - Q_11(q_11^(1/{ell})) = Q_11(11^(1/{ell})), totally ramified of degree {ell}")
+    print()
+
+    print("SCOPE")
+    print("-----")
+    print("This script verifies the local arithmetic of the curve 11a1")
+    print("at its bad prime p=11, confirming split multiplicative")
+    print("reduction and the IUT I, Def 3.1(c) condition.")
+    print()
+    print("It does NOT verify the global Initial Theta Data, which")
+    print("requires additional conditions (e.g., E[30] subset E(F)) that")
+    print("fail over Q for 11a1.")
+    print("=" * 78)
+
+main()

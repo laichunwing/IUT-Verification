@@ -1,0 +1,223 @@
+# 03_log_unit_bounds.sage
+#
+# Unit C of "Independent Exact Verification of the Finite-Sum and
+# Scalar-Rearrangement Identities Surrounding IUT IV".
+#
+# Verifies IUT IV Proposition 1.2(i) by sample computation for
+# E = Q_11 (e=1) and E = Q_11(sqrt 11) (e=2):
+#
+#   Upper bound: v_K(log u) >= -b for units u in O_E^×,
+#                with b = 1 - 1/e (K-normalization).
+#
+#   Lower bound: every y = pi^k x with k = ceil(e/(p-2)) and pi a
+#                uniformizer lies in log(O_E^×); verified by checking
+#                u = exp(y) satisfies v(u)=0 and v(log u)=v(y).
+#
+#   Convergence threshold: v(y) > e/(p-1).
+#
+# Classification: Exact p-adic (valuations at precision 20).
+#
+# Runs in SageMath 9.5+ or 10.x.
+# Calls main() unconditionally (no __name__ guard).
+
+from sage.all import *
+
+def main():
+    p = 11
+    prec = 20
+    n_trials = 10
+
+    print("=" * 78)
+    print("  UNIT C: IUT IV PROPOSITION 1.2(i)")
+    print("  p-adic logarithm bounds on units")
+    print("  E = Q_11 (e=1) and E = Q_11(sqrt 11) (e=2)")
+    print("=" * 78)
+    print()
+
+    # ==================================================================
+    # Section 1: Q_11 (unramified, e=1)
+    # ==================================================================
+    print("--- Section 1: E = Q_11 (unramified, e=1) ---")
+    K1 = Qp(p, prec=prec)
+    e1 = K1.e()
+    b1 = QQ(1) - QQ(1) / QQ(e1)             # b = 1 - 1/e
+    k1 = -(-(e1) // (p - 2))                # ceil(e/(p-2))
+    print(f"  field = {K1}")
+    print(f"  e = {e1}, f = {K1.f()}")
+    print(f"  b = 1 - 1/e = {b1}")
+    print(f"  k = ceil(e/(p-2)) = {k1}")
+    print(f"  p^{k1} = uniformizer^{k1} (uniformizer = {p})")
+
+    # ---- Upper bound ----
+    print(f"\n  Upper bound: v(log u) >= -b = {-b1}")
+    v_min_1 = None
+    n_valid_1 = 0
+    for _ in range(n_trials):
+        r = K1(randint(1, p**2))
+        u = 1 + p * r
+        if u.valuation() != 0:
+            continue
+        lu = u.log()
+        if lu == 0:
+            continue
+        n_valid_1 += 1
+        v = lu.valuation()
+        if v_min_1 is None or v < v_min_1:
+            v_min_1 = v
+    print(f"  valid unit samples: {n_valid_1}")
+    print(f"  min v(log u) = {v_min_1}")
+    holds_upper_1 = (v_min_1 is not None) and (v_min_1 >= -b1)
+    print(f"  Holds? {holds_upper_1}")
+
+    # ---- Lower bound ----
+    print(f"\n  Lower bound: y = {p}^{k1} * x, check v(exp(y))=0 and v(log(exp(y)))=v(y)")
+    threshold_1 = QQ(e1) / QQ(p - 1)
+    print(f"  convergence threshold: v(y) > e/(p-1) = {threshold_1}")
+    n_samp_1 = 0
+    n_ok_1 = 0
+    v_y_1 = []
+    for _ in range(n_trials):
+        x = K1(randint(1, p))
+        y = (p ** k1) * x
+        if y == 0 or y.valuation() <= threshold_1:
+            continue
+        u = y.exp()
+        n_samp_1 += 1
+        v_y_1.append(y.valuation())
+        if u.valuation() == 0 and u.log().valuation() == y.valuation():
+            n_ok_1 += 1
+    print(f"  valid samples: {n_samp_1}")
+    print(f"  passing: {n_ok_1}/{n_samp_1}")
+    print(f"  sample v(y) values: {v_y_1}")
+    holds_lower_1 = (n_samp_1 > 0) and (n_ok_1 == n_samp_1)
+    print(f"  Holds? {holds_lower_1}")
+    print()
+
+    # ==================================================================
+    # Section 2: Q_11(sqrt 11) (ramified, e=2)
+    # ==================================================================
+    print("--- Section 2: E = Q_11(sqrt 11) (ramified, e=2) ---")
+    K0 = Qp(p, prec=prec)
+    R = PolynomialRing(K0, 'x')
+    xv = R.gen()
+    K2 = K0.extension(xv**2 - p, names='pi')
+    pi = K2.gen()
+    e2 = K2.e()
+    b2 = QQ(1) - QQ(1) / QQ(e2)
+    k2 = -(-(e2) // (p - 2))
+    print(f"  field = {K2}")
+    print(f"  e = {e2}, f = {K2.f()}")
+    print(f"  v(pi) = {pi.valuation()}, pi^2 = {pi**2}")
+    print(f"  b = 1 - 1/e = {b2}")
+    print(f"  k = ceil(e/(p-2)) = {k2}")
+    print(f"  pi^{k2} = uniformizer^{k2}")
+
+    # ---- Upper bound ----
+    print(f"\n  Upper bound: v(log u) >= -b = {-b2}")
+    v_min_2 = None
+    n_valid_2 = 0
+    for _ in range(n_trials):
+        r = pi * K2(randint(1, 3)) + K2(randint(1, 3))
+        u = 1 + pi * r
+        if u.valuation() != 0:
+            continue
+        lu = u.log()
+        if lu == 0:
+            continue
+        n_valid_2 += 1
+        v = lu.valuation()
+        if v_min_2 is None or v < v_min_2:
+            v_min_2 = v
+    print(f"  valid unit samples: {n_valid_2}")
+    print(f"  min v(log u) = {v_min_2}")
+    holds_upper_2 = (v_min_2 is not None) and (v_min_2 >= -b2)
+    print(f"  Holds? {holds_upper_2}")
+
+    # ---- Lower bound ----
+    print(f"\n  Lower bound: y = pi^{k2} * x, check v(exp(y))=0 and v(log(exp(y)))=v(y)")
+    threshold_2 = QQ(e2) / QQ(p - 1)
+    print(f"  convergence threshold: v(y) > e/(p-1) = {threshold_2}")
+    n_samp_2 = 0
+    n_ok_2 = 0
+    v_y_2 = []
+    for _ in range(n_trials):
+        x = K2(randint(1, p)) + pi * K2(randint(1, 3))
+        y = (pi ** k2) * x
+        if y == 0 or y.valuation() <= threshold_2:
+            continue
+        u = y.exp()
+        n_samp_2 += 1
+        v_y_2.append(y.valuation())
+        if u.valuation() == 0 and u.log().valuation() == y.valuation():
+            n_ok_2 += 1
+    print(f"  valid samples: {n_samp_2}")
+    print(f"  passing: {n_ok_2}/{n_samp_2}")
+    print(f"  sample v(y) values: {v_y_2}")
+    holds_lower_2 = (n_samp_2 > 0) and (n_ok_2 == n_samp_2)
+    print(f"  Holds? {holds_lower_2}")
+    print()
+
+    # ==================================================================
+    # Summary (paper's §5 table)
+    # ==================================================================
+    print("=" * 78)
+    print("  SUMMARY")
+    print("=" * 78)
+    print()
+    print(f"{'Quantity':<40} | {'Q_11':>15} | {'Q_11(sqrt 11)':>15}")
+    print("-" * 78)
+    print(f"{'Upper: min v(log u)':<40} | {str(v_min_1):>15} | {str(v_min_2):>15}")
+    print(f"{'Upper: required >= -b':<40} | {str(-b1):>15} | {str(-b2):>15}")
+    print(f"{'Upper: holds':<40} | {str(holds_upper_1):>15} | {str(holds_upper_2):>15}")
+    print(f"{'Lower: samples passing':<40} | {f'{n_ok_1}/{n_samp_1}':>15} | {f'{n_ok_2}/{n_samp_2}':>15}")
+    print(f"{'Lower: holds':<40} | {str(holds_lower_1):>15} | {str(holds_lower_2):>15}")
+    print()
+
+    # ==================================================================
+    # Verdict
+    # ==================================================================
+    all_ok = (holds_upper_1 and holds_upper_2 and
+              holds_lower_1 and holds_lower_2)
+    print("=" * 78)
+    if all_ok:
+        print("  ALL CHECKS PASSED for both fields")
+    else:
+        print("  FAILURES DETECTED")
+    print("=" * 78)
+
+    # ==================================================================
+    # Scope
+    # ==================================================================
+    print()
+    print("SCOPE")
+    print("-----")
+    print("This script verifies, by sample computation at precision 20,")
+    print("the two inclusions of IUT IV Proposition 1.2(i) for")
+    print("E = Q_11 (e=1) and E = Q_11(sqrt 11) (e=2):")
+    print()
+    print("  Upper bound: v_K(log u) >= -b for units u in O_E^×,")
+    print("               with b = 1 - 1/e (K-normalization).")
+    print()
+    print("  Lower bound: every y = pi^k x with k = ceil(e/(p-2)) lies in")
+    print("               log(O_E^×); verified by u = exp(y) satisfying")
+    print("               v(u)=0 and v(log u)=v(y).")
+    print()
+    print("  Convergence threshold: v(y) > e/(p-1).")
+    print()
+    print("The pass/fail outcome is sample-independent:")
+    print("  - v(log u) >= 1 for every unit u in the tested range;")
+    print("  - v(y) >= 1 for every y = pi^k x with v(x) >= 0.")
+    print()
+    print("The displayed min values and sample v(y) values are")
+    print("representative of one random run; the PASS verdict does not")
+    print("depend on them.")
+    print()
+    print("This verifies ONE lemma in the chain to Theorem 1.10.")
+    print("It does NOT verify:")
+    print("  - the full Theorem 1.10;")
+    print("  - ATS III;")
+    print("  - the ABC conjecture;")
+    print("  - anything about the Theta-link or the structural argument.")
+    print("=" * 78)
+
+main()

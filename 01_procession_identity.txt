@@ -1,0 +1,167 @@
+# 01_procession_identity.sage
+#
+# Unit A of "Independent Exact Verification of the Finite-Sum and
+# Scalar-Rearrangement Identities Surrounding IUT IV".
+#
+# Verifies, in exact rational arithmetic:
+#   Proposition 1 (procession identity):
+#     A_raw(l)  = sum_{j=1}^{l*} j^2/(2l) = (l^2 - 1)/48
+#     A_norm(l) = (1/l*) A_raw(l)         = (l + 1)/24
+#     A_raw/A_norm = l* = (l - 1)/2
+#   Proposition 2 (the two constants):
+#     chi = 12/(l(l+1)),  tau = 12/l^2
+#     chi - tau = -12/(l^2(l+1))
+#     chi / tau = l/(l+1)
+#
+# Classification: Exact (rational arithmetic in QQ, no floating point).
+#
+# Runs in SageMath 9.5+ or 10.x. Uses only QQ; no Qp, no floats.
+# Call main() unconditionally (no __name__ guard) so it runs in a
+# pasted Sage/Jupyter cell.
+
+from sage.all import QQ
+
+# ------------------------------------------------------------------
+# Core quantities
+# ------------------------------------------------------------------
+
+def A_raw(l):
+    """Raw procession sum: sum_{j=1}^{l*} j^2/(2l), l* = (l-1)/2."""
+    l = int(l)
+    l_star = (l - 1) // 2
+    total = QQ(0)
+    for j in range(1, l_star + 1):
+        total += QQ(j * j) / QQ(2 * l)
+    return total
+
+def A_norm(l):
+    """Procession mean: (1/l*) A_raw(l)."""
+    l = int(l)
+    l_star = (l - 1) // 2
+    return A_raw(l) / QQ(l_star)
+
+def constants(l):
+    """Return (chi, tau) as exact rationals."""
+    l = int(l)
+    chi = QQ(12) / QQ(l * (l + 1))
+    tau = QQ(12) / QQ(l * l)
+    return chi, tau
+
+# ------------------------------------------------------------------
+# Verification for a single prime
+# ------------------------------------------------------------------
+
+def check_prime(l):
+    """Run all six assertions for prime l. Return (checks, values)."""
+    l = int(l)
+    l_star = (l - 1) // 2
+
+    raw  = A_raw(l)
+    norm = A_norm(l)
+    chi, tau = constants(l)
+
+    raw_pred    = QQ(l * l - 1) / QQ(48)
+    norm_pred   = QQ(l + 1) / QQ(24)
+    ratio       = raw / norm
+    ratio_pred  = QQ(l_star)
+    diff        = chi - tau
+    diff_pred   = -QQ(12) / QQ(l * l * (l + 1))
+    quot        = chi / tau
+    quot_pred   = QQ(l) / QQ(l + 1)
+
+    checks = [
+        ("P1  A_raw  = (l^2 - 1)/48",        raw   == raw_pred),
+        ("P1  A_norm = (l + 1)/24",          norm  == norm_pred),
+        ("P1  A_raw/A_norm = l*",            ratio == ratio_pred),
+        ("P2  chi = 12/(l(l+1))",            chi   == QQ(12) / QQ(l*(l+1))),
+        ("P2  chi - tau = -12/(l^2(l+1))",   diff  == diff_pred),
+        ("P2  chi / tau = l/(l+1)",          quot  == quot_pred),
+    ]
+
+    values = dict(
+        raw=raw, norm=norm, ratio=ratio,
+        chi=chi, tau=tau, diff=diff, quot=quot,
+    )
+    return checks, values
+
+# ------------------------------------------------------------------
+# Main
+# ------------------------------------------------------------------
+
+def main():
+    primes = [5, 7, 11, 13, 17, 19, 23, 29, 31, 47, 101, 1009]
+
+    print("=" * 78)
+    print("  UNIT A: PROCESSION IDENTITY AND THE TWO CONSTANTS")
+    print("  Exact rational arithmetic (QQ). Twelve odd primes.")
+    print("=" * 78)
+
+    all_ok = True
+
+    # ---- Header table matching the paper's Table 1 ----
+    print()
+    print(f"{'l':>6} | {'A_raw':>14} | {'A_norm':>10} | {'A_raw/A_norm':>12} | {'chi':>14} | {'tau':>14}")
+    print("-" * 78)
+
+    for l in primes:
+        checks, v = check_prime(l)
+        ok = all(b for _, b in checks)
+        all_ok = all_ok and ok
+        print(f"{l:>6} | {str(v['raw']):>14} | {str(v['norm']):>10} | "
+              f"{str(v['ratio']):>12} | {str(v['chi']):>14} | {str(v['tau']):>14}")
+
+    # ---- Per-prime detailed check log ----
+    print()
+    print("=" * 78)
+    print("  DETAILED CHECK LOG")
+    print("=" * 78)
+
+    for l in primes:
+        checks, v = check_prime(l)
+        print(f"\n l = {l},  l* = {(l - 1) // 2}")
+        print(f"   A_raw     = {v['raw']}")
+        print(f"   A_norm    = {v['norm']}")
+        print(f"   A_raw/A_n = {v['ratio']}")
+        print(f"   chi       = {v['chi']}")
+        print(f"   tau       = {v['tau']}")
+        print(f"   chi - tau = {v['diff']}")
+        print(f"   chi / tau = {v['quot']}")
+        for name, b in checks:
+            print(f"   {'PASS' if b else 'FAIL'}  {name}")
+
+    # ---- Verdict ----
+    print()
+    print("=" * 78)
+    print("  VERDICT")
+    print("=" * 78)
+    if all_ok:
+        print("ALL EXACT CHECKS PASSED for all twelve primes.")
+    else:
+        print("FAILURES DETECTED. See log above.")
+
+    # ---- Scope ----
+    print()
+    print("SCOPE")
+    print("-----")
+    print("This script verifies, in exact rational arithmetic, the identities")
+    print("of Propositions 1 and 2 of the paper:")
+    print()
+    print("  A_raw(l)      = (l^2 - 1)/48          exactly")
+    print("  A_norm(l)     = (l + 1)/24            exactly")
+    print("  A_raw/A_norm  = l* = (l - 1)/2        exactly")
+    print("  chi           = 12/(l(l+1))           exactly")
+    print("  tau           = 12/l^2                exactly")
+    print("  chi - tau     = -12/(l^2(l+1))        exactly")
+    print("  chi / tau     = l/(l+1)               exactly")
+    print()
+    print("for every l in:", primes)
+    print()
+    print("These are exact rational identities. They do NOT establish:")
+    print("  - that procession normalization is structurally valid in IUT;")
+    print("  - that Scholze-Stix is right or wrong;")
+    print("  - that Corollary 3.12 follows;")
+    print("  - anything about the Theta-link, the Rosetta Stone, or Belyi")
+    print("    reduction.")
+    print("=" * 78)
+
+main()

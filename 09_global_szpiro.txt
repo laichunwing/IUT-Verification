@@ -1,0 +1,141 @@
+# 09_global_szpiro.sage
+#
+# Unit I of "Independent Exact Verification of the Finite-Sum and
+# Scalar-Rearrangement Identities Surrounding IUT IV".
+#
+# Verifies the global Szpiro/ABC inequality from Minamide et al.,
+# and puts the local non-containment of Unit E into quantitative context.
+#
+# 1. The local gap in Step (v) is (27/35) * log p.
+# 2. The global error term in IUT IV Theorem 1.10 is 20 * e_mod^* * l.
+# 3. The global error term is vastly larger than the local gap.
+# 4. The explicit Szpiro/ABC inequality holds trivially for the
+#    record ABC triple (2, 3^10 * 109, 23^5).
+#
+# Classification: Exact / Illustrative.
+# Runs in SageMath 9.5+ or 10.x. Calls main() unconditionally.
+
+from sage.all import *
+import math
+
+def main():
+    print("=" * 78)
+    print("  UNIT I: GLOBAL BOUNDS AND THE ABC CONJECTURE")
+    print("=" * 78)
+    print()
+
+    # ------------------------------------------------------------------
+    # I.1: The local gap from Unit E
+    # ------------------------------------------------------------------
+    print("--- I.1: Local gap from Unit E ---")
+    p = 30965771
+    # The hull volume is at least -2 log p.
+    # The Step (v) bound is -97/35 log p.
+    # The gap is (-2 - (-97/35)) log p = (27/35) log p.
+    local_gap_coeff = QQ(27) / QQ(35)
+    local_gap = float(local_gap_coeff) * math.log(p)
+    
+    print(f"  p = {p}")
+    print(f"  Step (v) bound coefficient: -97/35")
+    print(f"  Hull volume coefficient:    -2 = -70/35")
+    print(f"  Local gap coefficient:      27/35")
+    print(f"  Local gap:                  {local_gap:.6f}")
+    print()
+
+    # ------------------------------------------------------------------
+    # I.2: The global error term
+    # ------------------------------------------------------------------
+    print("--- I.2: Global error term in IUT IV Theorem 1.10 ---")
+    # From IUT IV Theorem 1.10, the explicit bound has an error term
+    # 20 * e_mod^* * l, where e_mod^* = 2^12 * 3^3 * 5 * e_mod.
+    # For F_mod = Q(sqrt 5), e_mod = 2.
+    e_mod = 2
+    e_mod_star = (2**12) * (3**3) * 5 * e_mod
+    ell = 7
+    global_error = 20 * e_mod_star * ell
+
+    print(f"  e_mod = {e_mod}")
+    print(f"  e_mod^* = 2^12 * 3^3 * 5 * e_mod = {e_mod_star}")
+    print(f"  l = {ell}")
+    print(f"  Global error term = 20 * e_mod^* * l = {global_error}")
+    print()
+
+    # ------------------------------------------------------------------
+    # I.3: Comparison
+    # ------------------------------------------------------------------
+    print("--- I.3: Comparison ---")
+    ratio = global_error / local_gap
+    print(f"  Local gap:    {local_gap:.6f}")
+    print(f"  Global error: {global_error}")
+    print(f"  Ratio (error/gap): {ratio:.2e}")
+    print()
+    print("  The global error term is about 7 orders of magnitude larger")
+    print("  than the local gap. Thus, the numerical global inequality")
+    print("  can easily absorb the local failure in Step (v).")
+    print("  However, the *proof* of the global inequality relies on the")
+    print("  local bound (1) at each prime. If Step (v) fails locally,")
+    print("  the proof is not valid, even if the final inequality holds.")
+    print()
+
+    # ------------------------------------------------------------------
+    # I.4: Explicit Szpiro/ABC bound for the record triple
+    # ------------------------------------------------------------------
+    print("--- I.4: Explicit Szpiro/ABC Bound for Record Triple ---")
+    # The record ABC triple is (2, 3^10 * 109, 23^5)
+    a = 2
+    b = 3**10 * 109
+    c = 23**5
+    assert a + b == c, "Triple does not sum to zero"
+    
+    abc = a * b * c
+    rad = 2 * 3 * 109 * 23
+    
+    print(f"  Triple: a = {a}, b = {b}, c = {c}")
+    print(f"  |abc| = {abc}")
+    print(f"  rad(abc) = {rad}")
+    print(f"  log(|abc|) = {math.log(abc):.6f}")
+    print()
+
+    # The explicit Szpiro bound from Minamide et al.:
+    # |abc| <= 2^4 * exp(1.7 * 10^30 * epsilon^(-166/81)) * rad(abc)^(3(1+epsilon))
+    eps = 0.01
+    log_C = math.log(16) + 1.7e30 * (eps**(-166/81))
+    log_rhs = log_C + 3 * (1 + eps) * math.log(rad)
+    log_lhs = math.log(abc)
+    
+    print(f"  epsilon = {eps}")
+    print(f"  log(C) = {log_C:.4e}")
+    print(f"  log(RHS) = {log_rhs:.4e}")
+    print(f"  log(LHS) = {log_lhs:.6f}")
+    print(f"  Inequality holds? {log_lhs <= log_rhs}")
+    print("  (The bound is trivially satisfied because C is astronomically large.)")
+    print()
+
+    # ------------------------------------------------------------------
+    # Verdict
+    # ------------------------------------------------------------------
+    print("=" * 78)
+    print("  VERDICT")
+    print("=" * 78)
+    print("  The local gap from Unit E is real, but it is numerically")
+    print("  negligible compared to the global error term in the")
+    print("  Szpiro/ABC bound of Minamide et al.")
+    print("  This shows that a local arithmetic failure in Step (v) does")
+    print("  not immediately break the global numerical inequality.")
+    print("  However, it does mean the *proof* of Theorem 1.10 (which")
+    print("  relies on the local bound) is not valid if Step (v) fails.")
+    print()
+
+    print("SCOPE")
+    print("-----")
+    print("This script verifies the exact arithmetic of the global error")
+    print("term in IUT IV Theorem 1.10 and the explicit Szpiro/ABC bound")
+    print("of Minamide et al.")
+    print()
+    print("It does NOT prove the ABC conjecture, nor does it verify the")
+    print("global inequality for all triples. It merely illustrates the")
+    print("relationship between the local failure in Unit E and the")
+    print("global error term in the proof.")
+    print("=" * 78)
+
+main()
